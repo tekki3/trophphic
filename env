@@ -1,20 +1,28 @@
+# Database configuration
 DB_HOST=localhost
 DB_NAME=mvc
 DB_USER=root
 DB_PASS=
+
+# Logging configuration
 LOGGING_ENABLED=true
 LOG_FILE=../logs/app.log
+
+# Application configuration
 APP_URL=http://trophphic
 APP_NAME=Trophphic
 APP_ENV=development
 APP_KEY=base64:q3Z
 APP_DEBUG=true
 APP_LOG_LEVEL=debug
-APP_URL=http://trophphic
 APP_VERSION=0.1.0
+
+# Application assets
 APP_LOGO=logo.png
 APP_ICON=icon.png
 APP_FAVICON=favicon.png
+
+# Application settings
 APP_THEME=light
 APP_LANG=en
 APP_TIMEZONE=UTC
@@ -24,11 +32,10 @@ APP_DATE_TIME_FORMAT=d-m-Y H:i:s
 APP_CURRENCY=USD
 APP_CURRENCY_SYMBOL=$
 APP_CURRENCY_POSITION=left
+
+# SMTP configuration
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=your-email@example.com
 SMTP_PASS=your-password
 SMTP_ENCRYPTION=tls
-
-
-
