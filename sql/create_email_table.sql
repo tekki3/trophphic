@@ -1,0 +1,8 @@
+CREATE TABLE `emails` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `recipient` VARCHAR(255) NOT NULL,
+    `subject` VARCHAR(255) NOT NULL,
+    `body` TEXT NOT NULL,
+    `sender` VARCHAR(255) NOT NULL,
+    `sent_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

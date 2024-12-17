@@ -1,0 +1,23 @@
+{
+    "name": "tekki3/trophphic",
+    "description": "A lightweight PHP MVC framework.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Tekki3",
+            "email": "tekki3.nl@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Trophphic\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
