@@ -10,6 +10,6 @@ class FormController extends TrophphicController {
         if ($_ENV['LOGGING_ENABLED'] === 'true') {
             Logger::info("Form submitted.");
         }
-        echo "Form submitted successfully.";
+        echo "Form submitted successfully.". $_POST['test'];
     }
 }

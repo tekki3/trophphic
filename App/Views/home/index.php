@@ -9,8 +9,11 @@
     <h1>Welcome to the Home Page</h1>
     <form method="POST" action="/submit">
     <input type="hidden" name="csrf_token" value="<?php echo Trophphic\Core\Security::getCsrfToken(); ?>">
+    <input  name="test" >
+ 
     <button type="submit">Submit</button>
-</form>
+
+    </form>
 
 </body>
 </html>
