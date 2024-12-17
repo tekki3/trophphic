@@ -4,6 +4,7 @@ namespace Trophphic\Core;
 
 use Trophphic\Core\Logger;
 
+
 class Router {
     private static $routes = [];
     private static $notFoundView = __DIR__ . '/../views/404.php';
@@ -34,7 +35,7 @@ class Router {
 
     private static function dispatch($action) {
         [$controller, $method] = explode('@', $action);
-        $controllerClass = '\\Trophphic\\App\\Controllers\\' . $controller;
+        $controllerClass = '\\Trophphic\\Controllers\\' . $controller;
 
         if (class_exists($controllerClass)) {
             $controllerInstance = new $controllerClass();

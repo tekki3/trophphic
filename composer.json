@@ -15,12 +15,9 @@
     },
     "autoload": {
         "psr-4": {
-            "Trophphic\\": "src/"
+            "Trophphic\\": "App/"
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true,
-    "require-dev": {
-        "phpunit/phpunit": "^11.5"
-    }
+    "prefer-stable": true
 }
