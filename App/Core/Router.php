@@ -4,10 +4,9 @@ namespace Trophphic\Core;
 
 use Trophphic\Core\Logger;
 
-
 class Router {
     private static $routes = [];
-    private static $notFoundView = __DIR__ . '/../views/404.php';
+    private static $notFoundView = __DIR__ . '/../../views/404.php';
 
     public static function get($route, $action) {
         self::$routes['GET'][$route] = $action;
@@ -34,19 +33,26 @@ class Router {
     }
 
     private static function dispatch($action) {
-        [$controller, $method] = explode('@', $action);
-        $controllerClass = '\\Trophphic\\Controllers\\' . $controller;
+        try {
+            [$controller, $method] = explode('@', $action);
+            $controllerClass = '\\Trophphic\\Controllers\\' . $controller;
 
-        if (class_exists($controllerClass)) {
-            $controllerInstance = new $controllerClass();
-            if (method_exists($controllerInstance, $method)) {
-                return call_user_func([$controllerInstance, $method]);
+            if (class_exists($controllerClass)) {
+                $controllerInstance = new $controllerClass();
+                if (method_exists($controllerInstance, $method)) {
+                    return call_user_func([$controllerInstance, $method]);
+                } else {
+                    throw new \Exception("Method $method not found in controller $controllerClass.");
+                }
+            } else {
+                throw new \Exception("Controller class $controllerClass not found.");
             }
+        } catch (\Exception $e) {
+            Logger::error("500 Internal Server Error: " . $e->getMessage());
+            http_response_code(500);
+            echo "500 Internal Server Error";
+            exit;
         }
-
-        http_response_code(500);
-        Logger::error("500 Internal Server Error: Controller or method not found.");
-        exit;
     }
 
     private static function render404() {

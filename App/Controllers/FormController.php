@@ -1,6 +1,6 @@
 <?php
 
-namespace Trophphic\App\Controllers;
+namespace Trophphic\Controllers;
 
 use Trophphic\Core\TrophphicController;
 use Trophphic\Core\Logger;

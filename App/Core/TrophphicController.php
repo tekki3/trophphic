@@ -5,7 +5,7 @@ use Exception;
 
 class TrophphicController {
     public function view($view, $data = []) {
-        $viewPath = '../src/App/Views/' . $view . '.php';
+        $viewPath = '../App/Views/' . $view . '.php';
         if (file_exists($viewPath)) {
             extract($data);
             require_once $viewPath;
