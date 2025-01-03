@@ -1,0 +1,60 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Trophphic\Core\Environment;
+use Trophphic\Console\Commands\{
+    MakeController,
+    MakeModel,
+    MakeView,
+    MakeMigration,
+    MakeSeeder,
+    DatabaseCommand
+};
+
+// Load environment variables
+Environment::load(__DIR__ . '/.env');
+
+$commands = [
+    'make:controller' => MakeController::class,
+    'make:model' => MakeModel::class,
+    'make:view' => MakeView::class,
+    'make:migration' => MakeMigration::class,
+    'make:seeder' => MakeSeeder::class,
+    'db:create' => [DatabaseCommand::class, 'create'],
+    'db:migrate' => [DatabaseCommand::class, 'migrate'],
+    'db:seed' => [DatabaseCommand::class, 'seed'],
+    'db:fresh' => [DatabaseCommand::class, 'fresh'],
+];
+
+if ($argc < 2) {
+    echo "Available commands:\n";
+    foreach (array_keys($commands) as $command) {
+        echo "  - $command\n";
+    }
+    exit(1);
+}
+
+$command = $argv[1];
+$params = array_slice($argv, 2);
+
+if (!isset($commands[$command])) {
+    echo "Command not found: $command\n";
+    exit(1);
+}
+
+try {
+    $handler = $commands[$command];
+    if (is_array($handler)) {
+        $instance = new $handler[0]();
+        $method = $handler[1];
+        $instance->$method(...$params);
+    } else {
+        $instance = new $handler();
+        $instance->handle(...$params);
+    }
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage() . "\n";
+    exit(1);
+} 

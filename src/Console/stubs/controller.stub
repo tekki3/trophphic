@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Controllers;
+
+use Trophphic\Core\TrophphicController;
+use Trophphic\Core\Request;
+use Trophphic\Core\Response;
+
+class {{controllerName}} extends TrophphicController
+{
+    public function index(Request $request, Response $response): string
+    {
+        return $this->render('index');
+    }
+
+    public function show(Request $request, Response $response, $id): string
+    {
+        return $this->render('show', ['id' => $id]);
+    }
+
+    public function create(Request $request, Response $response): string
+    {
+        return $this->render('create');
+    }
+
+    public function store(Request $request, Response $response): void
+    {
+        $data = $request->getBody();
+        // Handle store logic
+        $response->redirect('/');
+    }
+
+    public function edit(Request $request, Response $response, $id): string
+    {
+        return $this->render('edit', ['id' => $id]);
+    }
+
+    public function update(Request $request, Response $response, $id): void
+    {
+        $data = $request->getBody();
+        // Handle update logic
+        $response->redirect('/');
+    }
+
+    public function delete(Request $request, Response $response, $id): void
+    {
+        // Handle delete logic
+        $response->redirect('/');
+    }
+} 
