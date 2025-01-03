@@ -11,9 +11,12 @@ class Database
     private static ?Database $instance = null;
     private PDO $pdo;
     private ?PDOStatement $statement = null;
+    private Logger $logger;
 
     private function __construct()
     {
+        $this->logger = Logger::getInstance();
+        
         $dsn = sprintf(
             "%s:host=%s;port=%s;dbname=%s;charset=utf8mb4",
             Environment::get('DB_CONNECTION', 'mysql'),
@@ -32,7 +35,9 @@ class Database
                     PDO::ATTR_EMULATE_PREPARES => false
                 ]
             );
+            $this->logger->info('Database connection established successfully');
         } catch (PDOException $e) {
+            $this->logger->error('Database connection failed: ' . $e->getMessage());
             throw new PDOException($e->getMessage());
         }
     }
@@ -47,6 +52,7 @@ class Database
 
     public function query(string $sql): self
     {
+        $this->logger->debug('Preparing SQL query', ['query' => $sql]);
         $this->statement = $this->pdo->prepare($sql);
         return $this;
     }
@@ -71,7 +77,17 @@ class Database
 
     public function execute(): bool
     {
-        return $this->statement->execute();
+        try {
+            $result = $this->statement->execute();
+            $this->logger->debug('Query executed successfully');
+            return $result;
+        } catch (PDOException $e) {
+            $this->logger->error('Query execution failed', [
+                'error' => $e->getMessage(),
+                'query' => $this->statement->queryString
+            ]);
+            throw $e;
+        }
     }
 
     public function findAll(): array

@@ -13,36 +13,49 @@ class UserController extends TrophphicController
 
     public function __construct()
     {
+        parent::__construct();
         $this->userModel = new User();
     }
 
     public function index(Request $request, Response $response): string
     {
+        $this->logger->info('Displaying users list');
         $users = $this->userModel->all();
         return $this->render('users/index', ['users' => $users]);
     }
 
     public function create(Request $request, Response $response): string
     {
+        $this->logger->info('Displaying user creation form');
         return $this->render('users/create');
     }
 
     public function store(Request $request, Response $response): void
     {
         $data = $request->getBody();
+        $this->logger->info('Creating new user', ['email' => $data['email']]);
         
-        // Hash password if provided
         if (!empty($data['password'])) {
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         }
         
-        if ($this->userModel->create($data)) {
-            $response->redirect('/users');
+        try {
+            if ($this->userModel->create($data)) {
+                $this->logger->info('User created successfully', ['email' => $data['email']]);
+                $response->redirect('/users');
+            }
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create user', [
+                'email' => $data['email'],
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 
     public function edit(Request $request, Response $response, $id): string
     {
+        $this->logger->info('Displaying user edit form', ['id' => $id]);
         $user = $this->userModel->find($id);
         return $this->render('users/edit', ['user' => $user]);
     }
@@ -50,23 +63,43 @@ class UserController extends TrophphicController
     public function update(Request $request, Response $response, $id): void
     {
         $data = $request->getBody();
+        $this->logger->info('Updating user', ['id' => $id]);
         
-        // Only update password if provided
         if (empty($data['password'])) {
             unset($data['password']);
         } else {
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         }
         
-        if ($this->userModel->update($id, $data)) {
-            $response->redirect('/users');
+        try {
+            if ($this->userModel->update($id, $data)) {
+                $this->logger->info('User updated successfully', ['id' => $id]);
+                $response->redirect('/users');
+            }
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to update user', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 
     public function delete(Request $request, Response $response, $id): void
     {
-        if ($this->userModel->delete($id)) {
-            $response->redirect('/users');
+        $this->logger->info('Deleting user', ['id' => $id]);
+        
+        try {
+            if ($this->userModel->delete($id)) {
+                $this->logger->info('User deleted successfully', ['id' => $id]);
+                $response->redirect('/users');
+            }
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to delete user', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 } 
