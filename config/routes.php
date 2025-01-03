@@ -2,7 +2,7 @@
 
 use App\Controllers\HomeController;
 use App\Controllers\UserController;
-use Trophphic\Bootstrap;
+use Trophphic\Core\Bootstrap;
 
 $app = Bootstrap::getInstance();
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Trophphic;
+namespace Trophphic\Core;
 
 use Trophphic\Core\Request;
 use Trophphic\Core\Response;
@@ -20,7 +20,7 @@ class Bootstrap
         self::$instance = $this;
         
         // Load environment variables first
-        Environment::load(__DIR__ . '/../.env');
+        Environment::load(__DIR__ . '/../../.env');
         
         // Then initialize session
         SessionManager::initialize();
@@ -39,7 +39,7 @@ class Bootstrap
 
     private function loadRoutes(): void
     {
-        require_once __DIR__ . '/../config/routes.php';
+        require_once __DIR__ . '/../../config/routes.php';
     }
 
     public function run()
