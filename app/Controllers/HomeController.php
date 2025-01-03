@@ -2,11 +2,11 @@
 
 namespace App\Controllers;
 
-use Trophphic\Core\Controller;
+use Trophphic\Core\TrophphicController;
 use Trophphic\Core\Request;
 use Trophphic\Core\Response;
 
-class HomeController extends Controller
+class HomeController extends TrophphicController
 {
     public function index(Request $request, Response $response): string
     {

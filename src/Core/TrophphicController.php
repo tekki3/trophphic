@@ -2,7 +2,7 @@
 
 namespace Trophphic\Core;
 
-class Controller
+class TrophphicController
 {
     public function render(string $view, array $params = []): string
     {

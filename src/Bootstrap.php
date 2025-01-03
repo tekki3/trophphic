@@ -5,6 +5,7 @@ namespace Trophphic;
 use Trophphic\Core\Request;
 use Trophphic\Core\Response;
 use Trophphic\Core\Router;
+use Trophphic\Core\Environment;
 
 class Bootstrap
 {
@@ -16,6 +17,10 @@ class Bootstrap
     public function __construct()
     {
         self::$instance = $this;
+        
+        // Load environment variables
+        Environment::load(__DIR__ . '/../.env');
+        
         $this->request = new Request();
         $this->response = new Response();
         $this->router = new Router($this->request, $this->response);
