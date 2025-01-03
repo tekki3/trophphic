@@ -64,8 +64,9 @@ class FileSessionHandler implements SessionInterface
         return session_regenerate_id(true);
     }
 
-    public function destroy(): void
+    public function destroy(?string $id = null): bool
     {
         session_destroy();
+        return true;
     }
 } 

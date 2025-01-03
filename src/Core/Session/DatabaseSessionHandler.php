@@ -3,99 +3,106 @@
 namespace Trophphic\Core\Session;
 
 use Trophphic\Core\Database;
-use Trophphic\Core\Environment;
 use Trophphic\Core\Logger;
-use PDOException;
 
-class DatabaseSessionHandler implements SessionInterface
+class DatabaseSessionHandler implements \SessionHandlerInterface, SessionInterface
 {
+    private static ?DatabaseSessionHandler $instance = null;
     private Database $db;
-    private string $sessionId;
-    private array $data = [];
-    private array $flash = [];
     private Logger $logger;
+    private array $data = [];
 
     public function __construct()
     {
-        try {
-            $this->logger = Logger::getInstance();
-            $this->logger->info('DatabaseSessionHandler: Initializing');
-            
-            $this->db = Database::getInstance();
-            
-            // Verify database connection
-            $this->db->query("SELECT 1")->execute();
-            $this->logger->info('DatabaseSessionHandler: Database connection verified');
-            
-            $this->ensureSessionTable();
-        } catch (PDOException $e) {
-            $this->logger->error('DatabaseSessionHandler: Database error: ' . $e->getMessage());
-            throw $e;
-        }
+        $this->db = Database::getInstance();
+        $this->logger = Logger::getInstance();
+        $this->logger->info('Database session handler initialized');
     }
 
-    private function ensureSessionTable(): void
+    public static function getInstance(): self
     {
-        try {
-            $this->logger->info('DatabaseSessionHandler: Creating sessions table');
-            
-            $sql = "CREATE TABLE IF NOT EXISTS `sessions` (
-                `id` VARCHAR(128) NOT NULL,
-                `data` TEXT,
-                `last_activity` INT,
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (`id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-            
-            $result = $this->db->query($sql)->execute();
-            $this->logger->info('DatabaseSessionHandler: Table creation attempt completed', ['result' => $result]);
-            
-        } catch (PDOException $e) {
-            $this->logger->error('DatabaseSessionHandler: Failed to create table: ' . $e->getMessage());
-            throw $e;
+        if (self::$instance === null) {
+            self::$instance = new self();
         }
+        return self::$instance;
     }
 
-    public function start(): void
+    public function open(string $path, string $name): bool
     {
-        try {
-            $this->logger->info('DatabaseSessionHandler: Starting session');
-            
-            if (isset($_COOKIE[session_name()])) {
-                $this->sessionId = $_COOKIE[session_name()];
-                $this->logger->info('DatabaseSessionHandler: Using existing session ID', ['id' => $this->sessionId]);
-            } else {
-                $this->sessionId = bin2hex(random_bytes(32));
-                $this->logger->info('DatabaseSessionHandler: Created new session ID', ['id' => $this->sessionId]);
-            }
+        $this->logger->info('DatabaseSessionHandler: Starting session');
+        return true;
+    }
 
-            // Set cookie
-            setcookie(session_name(), $this->sessionId, [
-                'expires' => time() + ((int)Environment::get('SESSION_LIFETIME', 120) * 60),
-                'path' => '/',
-                'secure' => true,
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
+    public function close(): bool
+    {
+        return true;
+    }
 
-            // Insert initial session data
-            $sql = "INSERT INTO sessions (id, data, last_activity) 
+    public function read(string $id): string|false
+    {
+        $this->logger->info('DatabaseSessionHandler: Using existing session ID', ['id' => $id]);
+        
+        $result = $this->db->query('SELECT data FROM sessions WHERE id = :id')
+            ->bind(':id', $id)
+            ->find();
+
+        if ($result) {
+            $this->data = json_decode($result['data'], true) ?? [];
+            return $result['data'];
+        }
+
+        return '';
+    }
+
+    public function write(string $id, string $data): bool
+    {
+        $sql = "INSERT INTO sessions (id, data, last_activity) 
                    VALUES (:id, :data, :time) 
                    ON DUPLICATE KEY UPDATE 
+                   data = VALUES(data),
                    last_activity = VALUES(last_activity)";
-            
+
+        try {
             $this->db->query($sql)
-                ->bind(':id', $this->sessionId)
-                ->bind(':data', json_encode([]))
+                ->bind(':id', $id)
+                ->bind(':data', $data)
                 ->bind(':time', time())
                 ->execute();
-                
-            $this->logger->info('DatabaseSessionHandler: Session initialized in database');
-            
+            return true;
         } catch (\Exception $e) {
-            $this->logger->error('DatabaseSessionHandler: Failed to start session: ' . $e->getMessage());
-            throw $e;
+            $this->logger->error('Session write failed', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    public function destroy(?string $id = null): bool
+    {
+        try {
+            if ($id !== null) {
+                $this->db->query('DELETE FROM sessions WHERE id = :id')
+                    ->bind(':id', $id)
+                    ->execute();
+            }
+            $this->clear();
+            session_destroy();
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Session destroy failed', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    public function gc(int $max_lifetime): int|false
+    {
+        try {
+            $old = time() - $max_lifetime;
+            $result = $this->db->query('DELETE FROM sessions WHERE last_activity < :old')
+                ->bind(':old', $old)
+                ->execute();
+            return $result ? 1 : 0;
+        } catch (\Exception $e) {
+            $this->logger->error('Session garbage collection failed', ['error' => $e->getMessage()]);
+            return false;
         }
     }
 
@@ -107,7 +114,15 @@ class DatabaseSessionHandler implements SessionInterface
     public function set(string $key, $value): void
     {
         $this->data[$key] = $value;
-        $this->updateData();
+        $_SESSION[$key] = $value;
+    }
+
+    public function start(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $this->data = $_SESSION;
     }
 
     public function has(string $key): bool
@@ -115,79 +130,35 @@ class DatabaseSessionHandler implements SessionInterface
         return isset($this->data[$key]);
     }
 
-    public function remove(string $key): void
-    {
-        unset($this->data[$key]);
-        $this->updateData();
-    }
-
     public function clear(): void
     {
         $this->data = [];
-        $this->updateData();
+        session_unset();
     }
 
     public function flash(string $key, $value): void
     {
-        $data = $this->data;
-        $data['_flash'][$key] = $value;
-        
-        $this->db->query("UPDATE sessions SET data = :data WHERE id = :id")
-            ->bind(':id', $this->sessionId)
-            ->bind(':data', json_encode($data))
-            ->execute();
+        $flash = $this->get('_flash', []);
+        $flash[$key] = $value;
+        $this->set('_flash', $flash);
     }
 
     public function getFlash(string $key, $default = null)
     {
-        return $this->flash[$key] ?? $default;
+        $flash = $this->get('_flash', []);
+        $value = $flash[$key] ?? $default;
+        unset($flash[$key]);
+        $this->set('_flash', $flash);
+        return $value;
     }
 
     public function regenerate(): bool
     {
-        $newId = bin2hex(random_bytes(32));
-        
-        $this->db->query("UPDATE sessions SET id = :new_id WHERE id = :old_id")
-            ->bind(':new_id', $newId)
-            ->bind(':old_id', $this->sessionId)
-            ->execute();
-
-        $this->sessionId = $newId;
-        setcookie(session_name(), $this->sessionId, [
-            'expires' => time() + ((int)Environment::get('SESSION_LIFETIME', 120) * 60),
-            'path' => '/',
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-
-        return true;
+        return session_regenerate_id(true);
     }
 
-    public function destroy(): void
+    public function remove(string $key): void
     {
-        $this->db->query("DELETE FROM sessions WHERE id = :id")
-            ->bind(':id', $this->sessionId)
-            ->execute();
-        
-        $this->data = [];
-        $this->flash = [];
-        
-        setcookie(session_name(), '', [
-            'expires' => time() - 3600,
-            'path' => '/',
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-
-    private function updateData(): void
-    {
-        $this->db->query("UPDATE sessions SET data = :data, last_activity = :time WHERE id = :id")
-            ->bind(':id', $this->sessionId)
-            ->bind(':data', json_encode($this->data))
-            ->bind(':time', time())
-            ->execute();
+        unset($this->data[$key], $_SESSION[$key]);
     }
 } 

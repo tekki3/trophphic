@@ -6,6 +6,9 @@ use App\Models\User;
 use Trophphic\Core\TrophphicController;
 use Trophphic\Core\Request;
 use Trophphic\Core\Response;
+use Trophphic\Core\Security\CSRF;
+use Trophphic\Core\Security\XSS;
+use Trophphic\Core\Form\Validator;
 
 class UserController extends TrophphicController
 {
@@ -30,16 +33,36 @@ class UserController extends TrophphicController
         return $this->render('users/create');
     }
 
-    public function store(Request $request, Response $response): void
+    public function store(Request $request, Response $response): Response
     {
-        $data = $request->getBody();
-        $this->logger->info('Creating new user', ['email' => $data['email']]);
-        
-        if (!empty($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        }
-        
         try {
+            // Validate CSRF token
+            if (!CSRF::validateToken($request->input('_csrf_token'))) {
+                throw new \Exception('Invalid CSRF token');
+            }
+
+            // Clean input data
+            $data = XSS::clean($request->all());
+
+            // Validate input
+            $validator = new Validator($data, [
+                'name' => 'required|min:2',
+                'email' => 'required|email',
+                'password' => 'required|min:6|confirmed'
+            ]);
+
+            if (!$validator->validate()) {
+                return $this->redirectBack()
+                    ->withErrors($validator->errors())
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            $this->logger->info('Creating new user', ['email' => $data['email']]);
+            
+            if (!empty($data['password'])) {
+                $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+            
             if ($this->userModel->create($data)) {
                 $this->logger->info('User created successfully', ['email' => $data['email']]);
                 $response->redirect('/users');

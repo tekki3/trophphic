@@ -7,6 +7,7 @@ use Trophphic\Core\Response;
 use Trophphic\Core\Router;
 use Trophphic\Core\Environment;
 use Trophphic\Core\Session\SessionManager;
+use Trophphic\Core\Security\CSRF;
 
 class Bootstrap
 {
@@ -30,6 +31,9 @@ class Bootstrap
         $this->router = new Router($this->request, $this->response);
         
         $this->loadRoutes();
+        
+        // Initialize CSRF protection
+        CSRF::init();
     }
 
     public static function getInstance(): self

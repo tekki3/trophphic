@@ -13,5 +13,5 @@ interface SessionInterface
     public function flash(string $key, $value): void;
     public function getFlash(string $key, $default = null);
     public function regenerate(): bool;
-    public function destroy(): void;
+    public function destroy(?string $id = null): bool;
 } 
