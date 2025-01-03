@@ -4,16 +4,11 @@ namespace Trophphic\Core;
 
 class Request
 {
-    public function getPath()
+    private array $params = [];
+
+    public function __construct()
     {
-        $path = $_SERVER['REQUEST_URI'] ?? '/';
-        $position = strpos($path, '?');
-        
-        if ($position === false) {
-            return $path;
-        }
-        
-        return substr($path, 0, $position);
+        $this->params = array_merge($_GET, $_POST);
     }
 
     public function getMethod(): string
@@ -21,22 +16,28 @@ class Request
         return strtoupper($_SERVER['REQUEST_METHOD']);
     }
 
-    public function getBody(): array
+    public function getPath(): string
     {
-        $body = [];
-
-        if ($this->getMethod() === 'GET') {
-            foreach ($_GET as $key => $value) {
-                $body[$key] = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-            }
+        $path = $_SERVER['REQUEST_URI'] ?? '/';
+        $position = strpos($path, '?');
+        if ($position !== false) {
+            $path = substr($path, 0, $position);
         }
+        return $path;
+    }
 
-        if ($this->getMethod() === 'POST') {
-            foreach ($_POST as $key => $value) {
-                $body[$key] = filter_input(INPUT_POST, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-            }
-        }
+    public function input(string $key, $default = null)
+    {
+        return $this->params[$key] ?? $default;
+    }
 
-        return $body;
+    public function all(): array
+    {
+        return $this->params;
+    }
+
+    public function except(array $keys): array
+    {
+        return array_diff_key($this->params, array_flip($keys));
     }
 } 

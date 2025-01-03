@@ -6,6 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Trophphic\\' => array($baseDir . '/src'),
+    'Trophphic\\Core\\' => array($baseDir . '/src/Core'),
     'App\\' => array($baseDir . '/app'),
 );

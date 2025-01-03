@@ -5,8 +5,11 @@
     "autoload": {
         "psr-4": {
             "App\\": "app/",
-            "Trophphic\\": "src/"
-        }
+            "Trophphic\\Core\\": "src/Core/"
+        },
+        "files": [
+            "src/Core/helpers.php"
+        ]
     },
     "require": {
         "php": ">=7.4",

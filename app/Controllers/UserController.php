@@ -33,16 +33,26 @@ class UserController extends TrophphicController
         return $this->render('users/create');
     }
 
-    public function store(Request $request, Response $response): Response
+    public function store(Request $request, Response $response): void
     {
         try {
+            $data = $request->all();
+            
             // Validate CSRF token
             if (!CSRF::validateToken($request->input('_csrf_token'))) {
-                throw new \Exception('Invalid CSRF token');
+                $this->logger->error('CSRF validation failed', [
+                    'token' => $request->input('_csrf_token'),
+                    'stored' => CSRF::getStoredToken()
+                ]);
+                
+                $response->withErrors(['error' => 'Invalid CSRF token'])
+                         ->withInput($request->except(['password', 'password_confirmation']))
+                         ->redirect('/users/create');
+                return;
             }
 
             // Clean input data
-            $data = XSS::clean($request->all());
+            $data = XSS::clean($data);
 
             // Validate input
             $validator = new Validator($data, [
@@ -52,13 +62,12 @@ class UserController extends TrophphicController
             ]);
 
             if (!$validator->validate()) {
-                return $this->redirectBack()
-                    ->withErrors($validator->errors())
-                    ->withInput($request->except(['password', 'password_confirmation']));
+                $response->withErrors($validator->errors())
+                         ->withInput($request->except(['password', 'password_confirmation']))
+                         ->redirect('/users/create');
+                return;
             }
 
-            $this->logger->info('Creating new user', ['email' => $data['email']]);
-            
             if (!empty($data['password'])) {
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
             }
@@ -66,11 +75,15 @@ class UserController extends TrophphicController
             if ($this->userModel->create($data)) {
                 $this->logger->info('User created successfully', ['email' => $data['email']]);
                 $response->redirect('/users');
+                return;
             }
+            
+            throw new \Exception('Failed to create user');
+            
         } catch (\Exception $e) {
             $this->logger->error('Failed to create user', [
-                'email' => $data['email'],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'data' => $data ?? null
             ]);
             throw $e;
         }
@@ -85,20 +98,39 @@ class UserController extends TrophphicController
 
     public function update(Request $request, Response $response, $id): void
     {
-        $data = $request->getBody();
-        $this->logger->info('Updating user', ['id' => $id]);
-        
-        if (empty($data['password'])) {
-            unset($data['password']);
-        } else {
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        }
-        
         try {
+            $data = $request->all();
+            
+            // Validate CSRF token
+            if (!CSRF::validateToken($request->input('_csrf_token'))) {
+                $this->logger->error('CSRF validation failed', [
+                    'token' => $request->input('_csrf_token'),
+                    'stored' => CSRF::getStoredToken()
+                ]);
+                
+                $response->withErrors(['error' => 'Invalid CSRF token'])
+                         ->withInput($request->except(['password']))
+                         ->redirect("/users/edit/$id");
+                return;
+            }
+
+            // Clean input data
+            $data = XSS::clean($data);
+            
+            if (empty($data['password'])) {
+                unset($data['password']);
+            } else {
+                $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+            
             if ($this->userModel->update($id, $data)) {
                 $this->logger->info('User updated successfully', ['id' => $id]);
                 $response->redirect('/users');
+                return;
             }
+            
+            throw new \Exception('Failed to update user');
+            
         } catch (\Exception $e) {
             $this->logger->error('Failed to update user', [
                 'id' => $id,

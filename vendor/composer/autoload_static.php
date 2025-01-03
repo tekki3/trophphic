@@ -6,10 +6,14 @@ namespace Composer\Autoload;
 
 class ComposerStaticInit053378244c0464fb978d9b3be3e0235b
 {
+    public static $files = array (
+        '572f49ca254cb8ffd33ca127be25be6f' => __DIR__ . '/../..' . '/src/Core/helpers.php',
+    );
+
     public static $prefixLengthsPsr4 = array (
         'T' => 
         array (
-            'Trophphic\\' => 10,
+            'Trophphic\\Core\\' => 15,
         ),
         'A' => 
         array (
@@ -18,9 +22,9 @@ class ComposerStaticInit053378244c0464fb978d9b3be3e0235b
     );
 
     public static $prefixDirsPsr4 = array (
-        'Trophphic\\' => 
+        'Trophphic\\Core\\' => 
         array (
-            0 => __DIR__ . '/../..' . '/src',
+            0 => __DIR__ . '/../..' . '/src/Core',
         ),
         'App\\' => 
         array (
