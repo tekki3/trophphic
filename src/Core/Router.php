@@ -28,6 +28,25 @@ class Router
         $this->routes['POST'][$path] = $callback;
     }
 
+    private function matchRoute(string $requestPath): ?array
+    {
+        $method = $this->request->getMethod();
+        
+        foreach ($this->routes[$method] ?? [] as $routePath => $callback) {
+            // Convert route parameters to regex pattern
+            $pattern = preg_replace('/\{(\w+)\}/', '([^/]+)', $routePath);
+            $pattern = "#^" . $pattern . "$#";
+            
+            if (preg_match($pattern, $requestPath, $matches)) {
+                // Remove the full match
+                array_shift($matches);
+                return ['callback' => $callback, 'params' => $matches];
+            }
+        }
+        
+        return null;
+    }
+
     public function resolve()
     {
         $path = $this->request->getPath();
@@ -38,9 +57,9 @@ class Router
             'method' => $method
         ]);
 
-        $callback = $this->routes[$method][$path] ?? false;
+        $route = $this->matchRoute($path);
 
-        if (!$callback) {
+        if (!$route) {
             $this->logger->warning('Route not found', [
                 'path' => $path,
                 'method' => $method
@@ -48,6 +67,9 @@ class Router
             $this->response->setStatusCode(404);
             return "Not Found";
         }
+
+        $callback = $route['callback'];
+        $params = $route['params'];
 
         if (is_array($callback)) {
             $controller = new $callback[0]();
@@ -57,6 +79,6 @@ class Router
             ]);
         }
 
-        return call_user_func($callback, $this->request, $this->response);
+        return call_user_func_array($callback, [$this->request, $this->response, ...$params]);
     }
 } 

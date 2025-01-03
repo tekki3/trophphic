@@ -6,6 +6,7 @@ use Trophphic\Core\Request;
 use Trophphic\Core\Response;
 use Trophphic\Core\Router;
 use Trophphic\Core\Environment;
+use Trophphic\Core\Session\SessionManager;
 
 class Bootstrap
 {
@@ -18,8 +19,11 @@ class Bootstrap
     {
         self::$instance = $this;
         
-        // Load environment variables
+        // Load environment variables first
         Environment::load(__DIR__ . '/../.env');
+        
+        // Then initialize session
+        SessionManager::initialize();
         
         $this->request = new Request();
         $this->response = new Response();
